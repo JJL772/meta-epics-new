@@ -12,7 +12,7 @@ BBCLASSEXTEND = "native nativesdk"
 # Force MODNAME to epics-base for both native and target recipe
 MODNAME = "epics-base"
 
-SRCREV = "07572ab02593fa225660fdee670850c9989f5851"
+SRCREV = "bf11a0c31c919ba85ba2e23b72bcf0b5f9f62e77"
 SRC_URI = "gitsm://github.com/epics-base/epics-base;protocol=https;branch=7.0;rev=${SRCREV}"
 
 SRC_URI += " file://0001-host-build-option.patch "
@@ -22,12 +22,14 @@ DEPENDS += " readline"
 RDEPENDS:${PN} += " bash perl"
 
 S = "${WORKDIR}/git"
+STAGING = "${WORKDIR}/staging-prefix"
 
 python do_configure() {
     import os, subprocess, io
 
     dest = d.getVar("D")
     PN = d.getVar("PN")
+    STAGING = d.getVar("STAGING")
 
     target_arch = epics.target_arch(d)
     
@@ -49,6 +51,7 @@ python do_configure() {
 
         # Point at /opt/epics; better to do this here to avoid bad file paths
         #TODO: fp.write(f'INSTALL_LOCATION={install_dir}\n')
+        fp.write(f'INSTALL_LOCATION={STAGING}\n')
         fp.write(f'FINAL_LOCATION=/opt/epics/{PN}\n')
 
         # Build only for target architecture(s), not for the build host
@@ -110,50 +113,73 @@ do_compile:append:class-target() {
 do_install() {
     install_dir="${D}/opt/epics/${MODNAME}"
 
+    install -d ${install_dir}
+    cp -RP --preserve=mode,links -v ${STAGING}/* ${install_dir}/
+
     # Install built or otherwise useful EPICS files
     # Arch specific files are handled in do_install:append functions below
-    for subdir in configure cfg db dbd include templates; do
-        install -d ${install_dir}/$subdir
-        cp -RP --preserve=mode,links -v ${S}/$subdir/* ${install_dir}/$subdir
-    done
+    #for subdir in configure cfg db dbd include templates; do
+    #    install -d ${install_dir}/$subdir
+    #    cp -RP --preserve=mode,links -v ${S}/$subdir/* ${install_dir}/$subdir
+    #done
 
     # Install EPICS Perl tools
-    install -d ${install_dir}/src/tools
-    cp -RP --preserve=mode,links -v ${S}/src/tools/* ${install_dir}/src/tools
+    #install -d ${install_dir}/src/tools
+    #cp -RP --preserve=mode,links -v ${S}/src/tools/* ${install_dir}/src/tools
 
     # Install more EPICS Perl tools
     # Have to be more specific here rather than copying _everything_ because
     # of libCap5.so that gets generated for the build host under this directory
-    for subdir in DBD EPICS Pod URI; do
-        install -d ${install_dir}/lib/perl/${subdir}
-        cp -RP --preserve=mode,links -v ${S}/lib/perl/${subdir}/* ${install_dir}/lib/perl/${subdir}
-    done
+    #for subdir in DBD EPICS Pod URI; do
+    #    install -d ${install_dir}/lib/perl/${subdir}
+    #    cp -RP --preserve=mode,links -v ${S}/lib/perl/${subdir}/* ${install_dir}/lib/perl/${subdir}
+    #done
 
-    for fname in CA.pm DBD.pm EpicsHostArch.pl; do
-        install -m 0755 ${S}/lib/perl/$fname ${install_dir}/lib/perl/$fname
-    done
+    #for fname in CA.pm DBD.pm EpicsHostArch.pl; do
+    #    install -m 0755 ${S}/lib/perl/$fname ${install_dir}/lib/perl/$fname
+    #done
 
     # Regardless of target or native build, the TARGET_ARCH is correct
-    install_bin="${D}/opt/epics/${MODNAME}/bin/linux-${TARGET_ARCH}"
-    install -d ${install_bin}
-    cp -RP --preserve=mode,links -v ${S}/bin/linux-${TARGET_ARCH}/* ${install_bin}
+    #install_bin="${D}/opt/epics/${MODNAME}/bin/linux-${TARGET_ARCH}"
+    #install -d ${install_bin}
+    #cp -RP --preserve=mode,links -v ${S}/bin/linux-${TARGET_ARCH}/* ${install_bin}
 
-    install_lib="${D}/opt/epics/${MODNAME}/lib/linux-${TARGET_ARCH}"
-    install -d ${install_lib}
-    cp -RP --preserve=mode,links -v ${S}/lib/linux-${TARGET_ARCH}/* ${install_lib}
+    #install_lib="${D}/opt/epics/${MODNAME}/lib/linux-${TARGET_ARCH}"
+    #install -d ${install_lib}
+    #cp -RP --preserve=mode,links -v ${S}/lib/linux-${TARGET_ARCH}/* ${install_lib}
 }
 
 do_install:append:class-native() {
     native_bin="${D}${STAGING_DIR_NATIVE}/opt/epics/${MODNAME}/bin/linux-${BUILD_ARCH}"
     install -d ${native_bin}
-    cp -RP --preserve=mode,links -v ${S}/bin/linux-${BUILD_ARCH}/* ${native_bin}
+    cp -RP --preserve=mode,links -v ${STAGING}/bin/linux-${BUILD_ARCH}/* ${native_bin}
 
     native_lib="${D}${STAGING_DIR_NATIVE}/opt/epics/${MODNAME}/lib/linux-${BUILD_ARCH}"
     install -d ${native_lib}
-    cp -RP --preserve=mode,links -v ${S}/lib/linux-${BUILD_ARCH}/* ${native_lib}
+    cp -RP --preserve=mode,links -v ${STAGING}/lib/linux-${BUILD_ARCH}/* ${native_lib}
 }
 
 do_install:append:class-target() {
+    install_dir="${D}/opt/epics/${MODNAME}"
+
+    # Remove any host arch files
+    rm -rf "${install_dir}/bin/linux-${BUILD_ARCH}"
+    rm -rf "${install_dir}/lib/linux-${BUILD_ARCH}"
+
+    # pkgconfig files are borderline useless here and trip up Yocto
+    rm -rf "${install_dir}/lib/pkgconfig"
+
+    # Find and remove any remaining host architecture binaries
+    HOST_REGEXP=$(echo ${BUILD_ARCH} | sed 's/_/[-_]/g') # dashes and underscores are used interchangeably sometimes
+    for f in $(find "${install_dir}/" -type f -iname "*.so" -o -iname "*.so.*"); do
+        if readelf -h $f | grep -Eiq "Machine:.*${HOST_REGEXP}" ; then
+            rm -v $f
+        fi
+    done
+
+    # Disable the INSTALL_LOCATION line in CONFIG_SITE.local
+    sed -i 's/INSTALL_LOCTION=/#INSTALL_LOCATION=/g' "${install_dir}/configure/CONFIG_SITE.local"
+
     # Symlink commonly used EPICS CLI tools
     mkdir -p "${D}/usr/local/bin"
     for prog in caput caget cainfo camonitor catime caRepeater pvcall pvget pvinfo pvlist pvmonitor pvput

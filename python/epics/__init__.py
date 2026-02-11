@@ -104,6 +104,7 @@ def generate_config_site(d, extra: dict = {}):
         with open(f'configure/{fn}', 'w') as fp:
             fp.seek(0, io.SEEK_END)
             fp.write(f'EPICS_BASE_HOST_BIN={native_root}/opt/epics/epics-base/bin/{harch}\n')
+            fp.write(f'EPICS_BASE={root}/opt/epics/epics-base\n')
             # Tweak location of build products
             fp.write(f'INSTALL_LOCATION={pfx}/opt/epics/{pn}\n')
             fp.write(f'FINAL_LOCATION=/opt/epics/{pn}\n')
