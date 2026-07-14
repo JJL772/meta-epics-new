@@ -29,4 +29,9 @@ do_install:append() {
         # Sanitize envPaths
         find "${D}/opt/epics/${MODNAME}" -type f -name 'envPaths' -exec sed -i "s,${RECIPE_SYSROOT},,g" {} \;
     fi
+
+    # Fix EPICS_BASE_HOST_BIN/LIB on target
+    if [ -f "${D}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local" ]; then
+        sed -i -e "s/${BUILD_ARCH}/${TARGET_ARCH}/g" "${D}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
+    fi
 }
