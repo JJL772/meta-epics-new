@@ -29,6 +29,9 @@ S = "${WORKDIR}/git"
 # Some downstream packages, such as pyepics, need shared libs.
 EPICS_ENABLE_SHARED_LIBS = "1"
 
+# Need to install some EPICS host tools to target if we want to do on-target rebuilds of IOCs
+EPICS_TARGET_INSTALL_TOOLS ?= "1"
+
 do_configure() {
     install -d "${D}/opt/epics/${PN}"
 
@@ -121,6 +124,7 @@ do_compile:append:class-target() {
         USR_CFLAGS="$(echo "${CC}" | cut -d ' ' -f 2-) ${CFLAGS}" \
         USR_CXXFLAGS="$(echo "${CXX}" | cut -d ' ' -f 2-) ${CXXFLAGS}" \
         USR_LDFLAGS="$(echo "${LD}" | cut -d ' ' -f 2-) ${LDFLAGS}" \
+        VALID_BUILDS="${@'Host Ioc Command' if d.getVar('EPICS_TARGET_INSTALL_TOOLS') == '1' else 'Ioc Command'}" \
         install.linux-${TARGET_ARCH}
 }
 
