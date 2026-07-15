@@ -21,8 +21,7 @@ do_install:append() {
         find "${D}/opt/epics/${MODNAME}/configure" -type f -name 'CONFIG*' -exec sed -i "s,${RECIPE_SYSROOT}/image,,g" {} \;
         find "${D}/opt/epics/${MODNAME}/configure" -type f -name 'CONFIG*' -exec sed -i "s,${RECIPE_SYSROOT_NATIVE},,g" {} \;
         find "${D}/opt/epics/${MODNAME}/configure" -type f -name 'CONFIG*' -exec sed -i "s,${RECIPE_SYSROOT},,g" {} \;
-        find "${D}/opt/epics/${MODNAME}/configure" -type f -name 'CONFIG*' -exec sed -i "s,${WORKDIR},,g" {} \;
-
+        find "${D}/opt/epics/${MODNAME}/configure" -type f -name 'CONFIG*' -exec sed -i "s,${D},,g" {} \;
         # Sanitize all installed .local files
         find "${D}/opt/epics/${MODNAME}" -type f -iname '*.local' -exec sed -i "s,${RECIPE_SYSROOT},,g" {} \;
 
