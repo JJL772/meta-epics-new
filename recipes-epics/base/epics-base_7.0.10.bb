@@ -217,8 +217,15 @@ do_install:class-target() {
     chmod 644 "${D}/etc/systemd/system/caRepeater.service"
     ln -s "/etc/systemd/system/caRepeater.service" "${D}/etc/systemd/system/multi-user.target.wants/caRepeater.service"
 
+}
+
+PACKAGE_PREPROCESS_FUNCS =+ "base_fix_target_host_build"
+
+# Make some changes to fix build on target. These need to be done in PKGD to avoid
+# causing problems with the off-target builds
+base_fix_target_host_build () {
     # Re-enable host build on target so we can rebuild IOCs if desired
-    sed -i -e "s/HOST_BUILD=NO/HOST_BUILD=YES/" "${D}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
+    sed -i -e "s/HOST_BUILD=NO/HOST_BUILD=YES/" "${PKGD}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
 }
 
 FILES:${PN}:append:class-target = " /usr/local/bin"
