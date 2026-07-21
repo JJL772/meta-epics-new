@@ -216,6 +216,9 @@ do_install:class-target() {
     cp "${D}/opt/epics/${MODNAME}/bin/linux-${TARGET_ARCH}/caRepeater.service" "${D}/etc/systemd/system/caRepeater.service"
     chmod 644 "${D}/etc/systemd/system/caRepeater.service"
     ln -s "/etc/systemd/system/caRepeater.service" "${D}/etc/systemd/system/multi-user.target.wants/caRepeater.service"
+
+    # Re-enable host build on target so we can rebuild IOCs if desired
+    sed -i -e "s/HOST_BUILD=NO/HOST_BUILD=YES/" "${D}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
 }
 
 FILES:${PN}:append:class-target = " /usr/local/bin"
