@@ -98,6 +98,7 @@ do_install:class-target() {
     # Remove unused directories to avoid installed-vs-shipped warnings
     rmdir "${D}/opt/epics/${MODNAME}/bin" || true
     rmdir "${D}/opt/epics/${MODNAME}/lib" || true
+
 }
 
 do_install:class-native() {
@@ -114,6 +115,13 @@ do_install:class-native() {
 # See comment above; need to do this before tasks with compilation
 do_install:prepend() {
     export PERL5LIB="${RECIPE_SYSROOT}/opt/epics/epics-base/lib/perl"
+}
+
+PACKAGE_PREPROCESS_FUNCS =+ "epics_fix_target_cross_archs"
+
+epics_fix_target_cross_archs () {
+    # Remove CROSS_COMPILER_TARGET_ARCHS to avoid double inclusion of arch in target build
+    sed -i -e "s/CROSS_COMPILER_TARGET_ARCHS=linux-${TARGET_ARCH}//" "${PKGD}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
 }
 
 # Common directories to install for both native and target pkgs
