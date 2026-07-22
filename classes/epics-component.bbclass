@@ -98,7 +98,6 @@ do_install:class-target() {
     # Remove unused directories to avoid installed-vs-shipped warnings
     rmdir "${D}/opt/epics/${MODNAME}/bin" || true
     rmdir "${D}/opt/epics/${MODNAME}/lib" || true
-
 }
 
 do_install:class-native() {
