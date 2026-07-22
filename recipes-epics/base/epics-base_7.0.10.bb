@@ -214,7 +214,6 @@ do_install:class-target() {
     cp "${D}/opt/epics/${MODNAME}/bin/linux-${TARGET_ARCH}/caRepeater.service" "${D}/etc/systemd/system/caRepeater.service"
     chmod 644 "${D}/etc/systemd/system/caRepeater.service"
     ln -s "/etc/systemd/system/caRepeater.service" "${D}/etc/systemd/system/multi-user.target.wants/caRepeater.service"
-
 }
 
 PACKAGE_PREPROCESS_FUNCS =+ "base_fix_target_host_build"
