@@ -167,6 +167,7 @@ def generate_config_site(d, extra: dict = {}):
         fp.write(f'USR_CPPFLAGS+={_strip_compiler(d, "CC")} {d.getVar("CPPFLAGS")}\n')
         fp.write(f'USR_CFLAGS+={_strip_compiler(d, "CC")} {d.getVar("CFLAGS")}\n')
         fp.write(f'USR_LDFLAGS+={_strip_compiler(d, "LD")} {d.getVar("LDFLAGS")}\n')
+        fp.write(f'COMMANDLINE_LIBRARY ?= READLINE\n')
 
     # Generate a CONFIG_SITE for HOST options
     host_cfg_site = f'configure/CONFIG_SITE.Common.{host_arch(d)}'

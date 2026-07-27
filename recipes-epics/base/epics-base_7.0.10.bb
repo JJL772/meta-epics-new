@@ -13,10 +13,8 @@ BBCLASSEXTEND = "native nativesdk"
 MODNAME = "epics-base"
 
 SRCREV = "bf11a0c31c919ba85ba2e23b72bcf0b5f9f62e77"
-SRC_URI = "gitsm://github.com/epics-base/epics-base;protocol=https;branch=7.0;rev=${SRCREV}"
-
-SRC_URI += " \
-            file://0001-host-build-option.patch \
+SRC_URI = "gitsm://github.com/epics-base/epics-base;protocol=https;branch=7.0;rev=${SRCREV} \
+           file://0001-host-build-option.patch \
            "
 
 DEPENDS += " readline"
@@ -28,6 +26,9 @@ S = "${WORKDIR}/git"
 
 # Some downstream packages, such as pyepics, need shared libs.
 EPICS_ENABLE_SHARED_LIBS = "1"
+
+# Need to install some EPICS host tools to target if we want to do on-target rebuilds of IOCs
+EPICS_TARGET_INSTALL_TOOLS ?= "1"
 
 do_configure() {
     install -d "${D}/opt/epics/${PN}"
@@ -121,6 +122,7 @@ do_compile:append:class-target() {
         USR_CFLAGS="$(echo "${CC}" | cut -d ' ' -f 2-) ${CFLAGS}" \
         USR_CXXFLAGS="$(echo "${CXX}" | cut -d ' ' -f 2-) ${CXXFLAGS}" \
         USR_LDFLAGS="$(echo "${LD}" | cut -d ' ' -f 2-) ${LDFLAGS}" \
+        VALID_BUILDS="${@'Host Ioc Command' if d.getVar('EPICS_TARGET_INSTALL_TOOLS') == '1' else 'Ioc Command'}" \
         install.linux-${TARGET_ARCH}
 }
 
@@ -212,6 +214,15 @@ do_install:class-target() {
     cp "${D}/opt/epics/${MODNAME}/bin/linux-${TARGET_ARCH}/caRepeater.service" "${D}/etc/systemd/system/caRepeater.service"
     chmod 644 "${D}/etc/systemd/system/caRepeater.service"
     ln -s "/etc/systemd/system/caRepeater.service" "${D}/etc/systemd/system/multi-user.target.wants/caRepeater.service"
+}
+
+PACKAGE_PREPROCESS_FUNCS =+ "base_fix_target_host_build"
+
+# Make some changes to fix build on target. These need to be done in PKGD to avoid
+# causing problems with the off-target builds
+base_fix_target_host_build () {
+    # Re-enable host build on target so we can rebuild IOCs if desired
+    sed -i -e "s/HOST_BUILD=NO/HOST_BUILD=YES/" "${PKGD}/opt/epics/${MODNAME}/configure/CONFIG_SITE.local"
 }
 
 FILES:${PN}:append:class-target = " /usr/local/bin"
